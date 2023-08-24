@@ -1,3 +1,11 @@
+openaiapikey*
+gpt3_logs/
+nvdcve_embedding.json
+nvdcvecwecpedata/
+nvdcve.json
+
+.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

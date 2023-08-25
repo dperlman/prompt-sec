@@ -1,6 +1,7 @@
 openaiapikey*
 gpt3_logs/
 nvdcve_embedding.json
+nvdcve_embedding_*.json
 nvdcvecwecpedata/
 nvdcve.json
 

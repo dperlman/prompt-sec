@@ -1,5 +1,7 @@
-Write a detailed summary of the following:
+Write a detailed summary of the following PASSAGE that describes a security investigation plan to most likely determine any weaknesses or vulnerabilities related to the QUESTION.
 
-<<SUMMARY>>
+QUESTION: <<QUERY>>
+
+PASSAGE: <<SUMMARY>>
 
 DETAILED SUMMARY:

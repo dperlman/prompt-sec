@@ -46,7 +46,7 @@ def gpt3_embedding(content, model='text-embedding-ada-002'):
     return vector
 
 def load_nvdcve():
-    ftemp = 'nvdcvecwecpedata/nvdcve-1.1-%d.json'
+    ftemp = 'cVWPeData/nvdcve-1.1-%d.json'
     years = [2002]
     years = range(2002, 2024) # last one is not included so it goes to 2023
     nvdcve = []
@@ -122,7 +122,7 @@ def parse_nvdcve_impacts(i):
     return severity, exploitability, impact
 
 def chunk_yaml_list(input, name, size=2000):
-    fname = '%s_yaml_chunks_size_%s.json' % (name, size)
+    fname = 'cVWPeData/%s_yaml_chunks_size_%s.json' % (name, size)
     #input = input[0:500]
     if os.path.isfile(fname):
         print('reading already chunked yaml of size %d' % size)
@@ -169,7 +169,7 @@ def f_vect(v):
 
 
 if __name__ == '__main__':
-    nvdcvefile = 'nvdcve.json'
+    nvdcvefile = 'cVWPeData/nvdcve.json'
     if os.path.isfile(nvdcvefile):
         with open(nvdcvefile, 'r') as infile:
             nvdcve = json.load(infile)

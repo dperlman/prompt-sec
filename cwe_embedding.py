@@ -47,14 +47,14 @@ def gpt3_embedding(content, model='text-embedding-ada-002'):
     return vector
 
 def load_cwe():
-    fname = 'nvdcvecwecpedata/cwec_v4.12.xml'
-    outfname = 'nvdcvecwecpedata/cwe.json'
+    fname = 'cVWPeData/cwec_v4.12.xml'
+    outfname = 'cVWPeData/cwe.json'
     if os.path.isfile(outfname):
-        print('Loading %s' % outfname)
+        print('JSON cwe data exists, loading %s' % outfname)
         with open(outfname, 'r') as infile:
             data = json.load(infile)
     else: 
-        print('Loading %s' % fname)
+        print('Converting CWE data from XML to JSON, loading %s' % fname)
         with open(fname, 'r') as infile:
             data = xmltodict.parse(infile.read())["Weakness_Catalog"]["Weaknesses"]["Weakness"]
             outdata = {}
@@ -64,68 +64,83 @@ def load_cwe():
             json.dump(outdata, outfile, indent=2)
     return data
 
-def parse_cwe(cwe):
-    out = []
-    print('Parsing data')
-    impacts = 0
-    noImpacts = 0
-    for i in tqdm(nvdcve):
-        proc = parse_nvdcve_item(i)
-        if not proc: continue
-        out.append(proc)
-        if proc['severity'] == 'unknown':
-            noImpacts += 1
-        else:
-            impacts += 1
-    print('Total complete data: %d Missing impacts: %d' % (impacts, noImpacts))
-    # 209412, missing: 503
+def simplify_cwe():
+    fname = 'cVWPeData/cwe.json'
+    outfname = 'cVWPeData/cwe_simple.json'
+    if os.path.isfile(outfname):
+        print('Simplified cwe data exists, loading %s' % outfname)
+        with open(outfname, 'r') as infile:
+            data = json.load(infile)
+    else: 
+        print('Simplifying cwe data, loading %s' % fname)
+        with open(fname, 'r') as infile:
+            cwe = json.load(infile)
+        out = {}
+        for i in tqdm(cwe.keys()):
+            v = simplify_cwe_item(cwe[i])
+            if not v: continue
+            if len(v.keys()) == 0: continue
+            out[i] = v
+        with open(outfname, 'w') as outfile:
+            json.dump(out, outfile, indent=2)
     return out
     
 
-def parse_nvdcve_item(cve):
-    cveID = cve['cve']["CVE_data_meta"]["ID"]
-    cwe = cve['cve']["problemtype"]["problemtype_data"][0]["description"]
-    cwe = [i['value'] for i in cwe]
-    description = cve['cve']["description"]["description_data"]
-    description = '\n\n'.join([i['value'].replace('\n', ' ') for i in description])
-    if description.startswith('** REJECT **'):
-        return False;
-    cpes = parse_nvdcve_configurations(cve["configurations"])
-    # now do impact etc
-    #print(cve)
-    severity, exploitability, impact = parse_nvdcve_impacts(cve['impact'])
-    if severity == 'unknown':
-        print(cve)
-    out = {'cve':cveID, 'cwes':cwe, 'cpes':cpes, 'severity':severity, 'exploitability':exploitability, 'impact':impact, 'description':description}
+def simplify_cwe_item(cwe):
+    out = {}
+    for k in cwe.keys():
+        kk = k.lstrip('@')
+        if kk in ["ID", "Name", "Description", "Extended_Description"]:
+            out[kk] = cwe[k]
+        elif kk in ["Weakness_Ordinalities", "Common_Consequences", "Taxonomy_Mappings", "References", "Mapping_Notes", "Content_History"]:
+            continue
+        elif kk == "Related_Weaknesses":
+            out[kk] = parse_related_weaknesses(cwe["Related_Weaknesses"])
+        elif kk == "Applicable_Platforms":
+            out[kk] = parse_applicable_platforms(cwe["Applicable_Platforms"])
+        elif kk == "Potential_Mitigations":
+            out[kk] = parse_potential_mitigations(cwe["Potential_Mitigations"])
+        elif kk == "Demonstrative_Examples":
+            out[kk] = parse_demonstrative_examples(cwe["Demonstrative_Examples"])
+        else:
+            print("unknown cwe item: %s" % kk)
     return out
 
 
-def parse_nvdcve_configurations(c):
-    nodes = c['nodes']
-    out = []
-    for n in nodes:
-        cpe23Uris = [i["cpe23Uri"] for i in n["cpe_match"]]
-        cpes = [' '.join(i.split(':')[3:5]) for i in cpe23Uris]
-        cpes = list(set(cpes)) # remove duplicates
-        out.extend(cpes)
+def parse_related_weaknesses(item):
+    # this one is pretty simple
+    return item["Related_Weakness"]
+
+def subl(subitem):
+    # used at the lowest level of parsing some items like Language
+    # subroutine for parse_applicable_platforms and maybe others
+    if isinstance(subitem, list):
+        return ', '.join(subl(i) for i in subitem)
+    elif isinstance(subitem, dict):
+        if "@Name" in subitem:
+            return subitem["@Name"]
+        elif ("@Class" in subitem) and subitem["@Class"][0:4] != "Not ":
+            return subitem["@Class"]
+        else:
+            print('subl found no name or class (or nonspecific class) for %s' % subitem.keys())
+            return ''
+        
+def parse_applicable_platforms(item):
+    # could be Language, Operating_System, Architecture, Technology
+    out = {}
+    for i in item.keys():
+        if i in ["Language", "Operating_System", "Architecture", "Technology"]: # any others? I don't think any that matter
+            out[i] = subl(item[i])
+        else:
+            print("unknown Applicable Platform item: %s" % i)
     return out
 
-def parse_nvdcve_impacts(i):
-    #print(i)
-    if "baseMetricV2" in i:
-        severity = i["baseMetricV2"]['severity']
-        exploitability = float(i["baseMetricV2"]["exploitabilityScore"])/2
-        impact = float(i["baseMetricV2"]["impactScore"])/2
-    elif "baseMetricV3" in i:
-        severity = i["baseMetricV3"]["cvssV3"]["baseSeverity"]
-        exploitability = float(i["baseMetricV3"]["exploitabilityScore"])
-        impact = float(i["baseMetricV3"]["impactScore"])
-    else:
-        print(i)
-        severity = 'unknown'
-        exploitability = 'unknown'
-        impact = 'unknown'
-    return severity, exploitability, impact
+
+def parse_potential_mitigations(item):
+    return None
+
+def parse_demonstrative_examples(item):
+    return None
 
 def chunk_yaml_list(input, name, size=2000):
     fname = '%s_yaml_chunks_size_%s.json' % (name, size)
@@ -175,14 +190,9 @@ def f_vect(v):
 
 
 if __name__ == '__main__':
-    cwefile = 'cwe.json'
-    if os.path.isfile(cwefile):
-        with open(cwefile, 'r') as infile:
-            cwe = json.load(infile)
-    else:
-        cwe = parse_cwe(load_cwe())
-        with open(cwefile, 'w') as outfile:
-            json.dump(cwe, outfile, indent=2)
+    # first do this if it needs to be done
+    load_cwe()
+    cwe = simplify_cwe()
     # now we have cwe, one way or another
     # need to break into max 8192 token chunks
     chunksize = 2000

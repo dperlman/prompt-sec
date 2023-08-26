@@ -3,6 +3,7 @@ gpt3_logs/
 nvdcve_embedding.json
 nvdcve_embedding_*.json
 nvdcvecwecpedata/
+cVWPeData/
 nvdcve.json
 
 .DS_Store

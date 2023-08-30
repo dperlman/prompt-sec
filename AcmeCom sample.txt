@@ -1,0 +1,18 @@
+AcmeCom’s Apex Web Application has a typical frontend implemented using HTML, CSS for styling, and JavaScript for data input, interaction, and other UI functionality. Both Backbone.js and Spine.js are used as frontend frameworks.
+JavaScript and CSS files are stored on Amazon’s CloudFront CDN (Conentent Delivery Network).
+
+Back-end / Server-side:
+The Backend is written almost entirely in Ruby with some minor compnants written in Python.
+
+Frameworks:
+Rails is used as the Ruby framework, and Django was used for the Python code.
+
+Database:
+MySQL
+
+Database Abstraction:
+AcmeCom’s development team wrote a simple Database Abstraction layer in Ruby. It is comprised of ten major classes and handles all Database IO from the frontend and the business logic.
+
+Server Software: Nginx
+
+Server Hardware: Two Dell PowerEdge R6515 Rack servers running windows 11 Server

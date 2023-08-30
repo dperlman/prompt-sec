@@ -5,6 +5,7 @@ nvdcve_embedding_*.json
 nvdcvecwecpedata/
 cVWPeData/
 nvdcve.json
+Outputs/
 
 .DS_Store
 

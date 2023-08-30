@@ -122,7 +122,7 @@ def parse_nvdcve_impacts(i):
     return severity, exploitability, impact
 
 def chunk_yaml_list(input, name, size=2000):
-    fname = 'cVWPeData/%s_yaml_chunks_size_%s.json' % (name, size)
+    fname = 'cVWPeData/%s_ychunk_size_%s.json' % (name, size)
     #input = input[0:500]
     if os.path.isfile(fname):
         print('reading already chunked yaml of size %d' % size)

@@ -1,0 +1,10 @@
+Use the security information in the following PASSAGE to write a detailed plan for a professional security review of the hardware and software described in the CLIENT_SYSTEMS. The purpose of the plan is to provide guidance to a professional pentester or security testing consultant. The target audience of this plan is the consultant; there is no need to provide general security recommendations to the client. Please only focus on listing testing tasks that could be performed by the pentesting consultant. Give detailed recommendations for the kinds of security testing that would be likely to uncover security vulnerabilities in the CLIENT_SYSTEMS.
+
+
+CLIENT_SYSTEMS: <<QUERY>>
+
+
+PASSAGE: <<PASSAGE>>
+
+
+DETAILED SECURITY PLAN:

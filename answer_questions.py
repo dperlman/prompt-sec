@@ -162,6 +162,7 @@ async def gpt_completion_coro(prompt=None, messages=None, model='gpt-3.5-turbo-1
 
 async def concurrent_gpt_completions(prompts=None, message_groups=None):
     #tasks = [asyncio.create_task(gpt_completion_coro(p)) for p in prompts]
+    print(message_groups)
     if prompts:
         tasks = [gpt_completion_coro(prompt=p) for p in prompts]
     elif message_groups:
@@ -191,9 +192,8 @@ if __name__ == '__main__':
     #print(results)
     #sys.exit(0)
     ####### for testing: ######
-    results = results[0:2]
+    #results = results[0:2]
     ######
-    answers = list()
     # answer the same question for all returned chunks
     print('creating sub-answers for each relevant chunk')
     with open('prompt_chunk.yaml', 'r') as f:
@@ -202,28 +202,44 @@ if __name__ == '__main__':
     #print(allprompts)
     #sys.exit()
     allcompletions = asyncio.run(concurrent_gpt_completions(message_groups=allprompts))
-    with open('async_completion_test.json', 'w') as f:
-        json.dump(allcompletions, f)
-    sys.exit()
+    # with open('async_completion_test.json', 'w') as f:
+    #     json.dump(allcompletions, f)
+    # sys.exit()
+    print('**************************************************')
+    print('Finished first round, starting with summary prompts.')
+    with open('prompt_summary.yaml', 'r') as f:
+        template = yaml.safe_load(f)
+    mainResult = allcompletions.pop(0)['text']
+    answers = []
+    for completion in tqdm(allcompletions):
+        print('Main plan, to be enhanced by the current plan, is:')
+        print(mainResult)
+        print()
+        currentPlan = completion['text']
+        print('Current plan is:')
+        print(currentPlan)
+        print()
+        messageGroup = parse_template_prompt(template, query, mainResult, currentPlan)
+        print('Current message group is:')
+        print(messageGroup)
+        print()
+        mainResult = asyncio.run(concurrent_gpt_completions(message_groups=[messageGroup]))[0]['text']
+        print('mainResult, as returned from GPT, is:')
+        print(mainResult)
+        answers.append(mainResult)
 
-    
-    for result in tqdm(results):
-        prompt = open_file('prompt_chunk.txt').replace('<<PASSAGE>>', result['content']).replace('<<QUERY>>', query)
-        answer = gpt_completion(prompt)
-        print('\n\n', answer)
-        answers.append(answer)
     # summarize the answers together
-    all_answers = '\n\n'.join(answers)
-    chunks = textwrap.wrap(all_answers, 10000)
-    plan = chunks.pop(0) # also removes so won't be duplicated
-    final = []
-    for chunk in chunks:
-        prompt = open_file('prompt_summary.txt').replace('<<QUERY>>', query).replace('<<MAIN_PASSAGE>>', plan).replace('<<ADDL_PASSAGE>>', chunk)
-        plan = gpt_completion(prompt)
-        final.append(plan)
-    #print('\n\n=========\n\n', '\n\n'.join(final))
-    print(plan)
-    # save the answers
+    # all_answers = '\n\n'.join(answers)
+    # chunks = textwrap.wrap(all_answers, 10000)
+    # plan = chunks.pop(0) # also removes so won't be duplicated
+    # final = []
+    # for chunk in chunks:
+    #     prompt = open_file('prompt_summary.txt').replace('<<QUERY>>', query).replace('<<MAIN_PASSAGE>>', plan).replace('<<ADDL_PASSAGE>>', chunk)
+    #     plan = gpt_completion(prompt)
+    #     final.append(plan)
+    # #print('\n\n=========\n\n', '\n\n'.join(final))
+    # print(plan)
+    # # save the answers
     i = 0
     fexist = True
     while fexist:
@@ -232,7 +248,7 @@ if __name__ == '__main__':
         fexist = os.path.isfile(fpath)
     # now we have the filename
     with open(fpath, 'w') as outfile:
-        json.dump(final, outfile, indent=2)
+        json.dump(answers, outfile, indent=2)
 
 
 # test query:
